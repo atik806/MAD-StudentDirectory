@@ -22,7 +22,8 @@ const SearchBar = forwardRef<TextInput, SearchBarProps>(({ value, onChangeText, 
 			placeholderTextColor="#94A3B8" 
 			autoCapitalize="none" 
 			autoCorrect={false} 
-			returnKeyType="search" 
+			returnKeyType="search"
+			accessibilityLabel="Search students"
 		/>
     </View>
 ));

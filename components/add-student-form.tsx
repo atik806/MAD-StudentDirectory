@@ -166,7 +166,13 @@ export default function AddStudentForm() {
         <ScrollView style={styles.container}>
             <View style={styles.headerRow}>
                 <Text style={styles.heading}>Join the Directory</Text>
-                <Pressable onPress={() => router.back()} style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}>
+                {/* Accessibility audit & fix (Feature 2):
+                    - Pressable: added accessibilityRole="button" so screen readers announce it as a button
+                    - Pressable: added accessibilityLabel for clear identification */}
+                <Pressable onPress={() => router.back()} style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Close form"
+                >
                     <Text style={styles.closeText}>Close</Text>
                 </Pressable>
             </View>
@@ -191,7 +197,15 @@ export default function AddStudentForm() {
 
             <FormField label="Skills (comma-separated)" value={formData.skillsText} onChangeText={(text) => updateField("skillsText", text)} placeholder="e.g. React Native, TypeScript, Figma" autoCapitalize="none" />
 
-            <Pressable style={[styles.button, !isFormValid && styles.buttonDisabled]} onPress={handleSubmitPress} disabled={!isFormValid || isSubmitting}>
+            {/* Accessibility audit & fix (Feature 2):
+                - Pressable: added accessibilityRole="button" so screen readers announce it as a button
+                - Pressable: added accessibilityLabel for clear identification
+                - Pressable: added accessibilityState={{ disabled }} so disabled state is announced */}
+            <Pressable style={[styles.button, !isFormValid && styles.buttonDisabled]} onPress={handleSubmitPress} disabled={!isFormValid || isSubmitting}
+                accessibilityRole="button"
+                accessibilityLabel="Join Directory"
+                accessibilityState={{ disabled: !isFormValid || isSubmitting }}
+            >
                 {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.buttonText}>Join Directory</Text>}
             </Pressable>
         </ScrollView>

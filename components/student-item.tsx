@@ -11,11 +11,25 @@ interface StudentItemProps {
     isSelected: boolean;
 }
 
+// Accessibility audit & fix (Feature 2):
+// - TouchableOpacity: added accessibilityRole="button" so screen readers announce it as a button
+// - TouchableOpacity: added accessibilityLabel with student name + department for context
+// - TouchableOpacity: added accessibilityHint describing what happens on tap
+// - TouchableOpacity: added accessibilityState={{ selected }} so selected state is announced
+// - Image: added accessibilityLabel so screen readers announce whose photo this is
+
 export default function StudentItem({ student, onPress, isSelected }: StudentItemProps) {
     return (
-        <TouchableOpacity style={[styles.row, isSelected && styles.rowSelected]} onPress={() => onPress(student)} activeOpacity={0.7}>
+        <TouchableOpacity style={[styles.row, isSelected && styles.rowSelected]} onPress={() => onPress(student)} activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={`${student.name}, ${student.department}`}
+            accessibilityHint="Tap to view full profile"
+            accessibilityState={{ selected: isSelected }}
+        >
             {/* Avatar image */}
-            <Image source={{ uri: student.avatarUrl }} style={styles.avatar} resizeMode="cover" />
+            <Image source={{ uri: student.avatarUrl }} style={styles.avatar} resizeMode="cover"
+                accessibilityLabel={`Profile photo of ${student.name}`}
+            />
 
             {/* Text content */}
             <View style={styles.info}>
