@@ -5,8 +5,8 @@ import StudentItem from "@/components/student-item";
 import { useDebounce } from "@/hooks/use-debounce";
 import { Student, STUDENTS } from "@/data/students";
 // Add useRef and useEffect to the import
-import React, { useRef, useEffect, useMemo, useState } from "react";
-import { Text, StyleSheet, View, FlatList, Pressable, ActivityIndicator } from "react-native";
+import React, { useRef, useEffect, useMemo, useState, useCallback } from "react";
+import { Text, StyleSheet, View, FlatList, Pressable } from "react-native";
 
 import { router } from "expo-router";
 import { useStudents } from "../../context/students-context";
@@ -14,6 +14,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 // app/(tabs)/index.tsx — import TextInput (not to be used as part of UI, but the type is needed for useRef)
 import { TextInput } from "react-native";
+import ErrorScreen from "@/components/error-screen";
+import SkeletonItem from "@/components/skeleton-item";
+
 
 export default function HomePage() {
     const [query, setQuery] = useState<string>("");
@@ -39,21 +42,62 @@ export default function HomePage() {
     // Read students directly from the global context
     const { students, isLoading, error } = useStudents();
 
+
+    const [retryKey, setRetryKey] = useState(0);
+    const handleRetry = useCallback(() => {
+        setRetryKey(k=>(k + 1));
+    },[]);
+
+    // Only recomputes when students or debouncedQuery changes.
+    // Declared before the loading/error guards so the number of hooks
+    // called stays constant between renders (Rules of Hooks).
+    const filtered = useMemo(() => {
+        return students.filter((s) => s.name.toLowerCase().includes(debouncedQuery.toLowerCase()) || s.department.toLowerCase().includes(debouncedQuery.toLowerCase()));
+    }, [students, debouncedQuery]);
+
+    const EmptyList = useCallback(() => {
+        if (query.length > 0) {
+            return (
+                <View style={styles.empty}>
+                    <Text style={styles.emptyTitle}>No results</Text>
+                    <Text style={styles.emptySub}>
+                        No students match "{debouncedQuery}"
+                    </Text>
+                </View>
+            );
+        }
+        return (
+            <View style={styles.empty}>
+                <Text style={styles.emptyTitle}>No students yet</Text>
+                <Text style={styles.emptySub}>
+                    Tap + Add to add the first student
+                </Text>
+            </View>
+        );
+    }, [query, debouncedQuery]);
+
+
     if (isLoading) {
         return (
-            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                <ActivityIndicator size="large" color="#0D9488" />
-                <Text style={{ marginTop: 12, color: "#64748B" }}>Loading students...</Text>
-            </View>
+            <SafeAreaView style={styles.screen}>
+                <View style={styles.titleBar}>
+                    <Text style={styles.title}>Student Directory</Text>
+                    <View style={styles.addButton}>
+                        <Text style={styles.addButtonText}>+ Add</Text>
+                    </View>
+                </View>
+                <FlatList
+                    data={[1, 2, 3, 4, 5, 6]}
+                    keyExtractor={(item) => String(item)}
+                    renderItem={() => <SkeletonItem />}
+                />
+            </SafeAreaView>
         );
     }
 
     if (error) {
         return (
-            <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 24 }}>
-                <Text style={{ fontSize: 18, fontWeight: "bold", color: "#EF4444" }}>Connection Error</Text>
-                <Text style={{ color: "#64748B", marginTop: 8, textAlign: "center" }}>{error}</Text>
-            </View>
+            <ErrorScreen message={error} onRetry={handleRetry} />
         );
     }
 
@@ -65,12 +109,6 @@ export default function HomePage() {
     //     setStudents((prev) => [newStudent, ...prev]);
     //     setShowForm(false);
     // };
-
-    // Only recomputes when students or debouncedQuery changes.
-    // Tapping a student (setSelectedStudent) does NOT re-run this.
-    const filtered = useMemo(() => {
-        return students.filter((s) => s.name.toLowerCase().includes(debouncedQuery.toLowerCase()) || s.department.toLowerCase().includes(debouncedQuery.toLowerCase()));
-    }, [students, debouncedQuery]);
 
     const handleSelect = (student: Student) => {
         setSelectedStudent((prev) => (prev?.id === student.id ? null : student));
@@ -86,7 +124,11 @@ export default function HomePage() {
             <View style={styles.titleBar}>
                 <Text style={styles.title}>Student Directory</Text>
                 {/* Navigate to the AddStudent screen — no prop passing needed */}
-                <Pressable style={styles.addButton} onPress={() => router.push("/(tabs)/add-student")}>
+                <Pressable style={styles.addButton} onPress={() => router.push("/(tabs)/add-student")}
+                    accessibilityRole="button"
+                    accessibilityLabel="Add new student"
+                    accessibilityHint="Opens the Add Student form"
+                >
                     <Text style={styles.addButtonText}>+ Add</Text>
                 </Pressable>
             </View>
@@ -102,11 +144,7 @@ export default function HomePage() {
                 data={filtered}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => <StudentItem student={item} onPress={handleSelect} isSelected={selectedStudent?.id === item.id} />}
-                ListEmptyComponent={
-                    <View style={styles.empty}>
-                        <Text style={styles.emptyText}>No students match "{query}"</Text>
-                    </View>
-                }
+                ListEmptyComponent={EmptyList}
             />
 
             {selectedStudent && <StudentDetail student={selectedStudent} onRemoved={() => setSelectedStudent(null)} />}
@@ -133,5 +171,9 @@ const styles = StyleSheet.create({
     },
     addButtonText: { color: "#FFFFFF", fontWeight: "700", fontSize: 13 },
     empty: { padding: 40, alignItems: "center" },
+    emptyTitle: { fontSize: 16, fontWeight: "bold", color: "#334155" },
+    emptySub: { fontSize: 14, color: "#64748B" },
     emptyText: { fontSize: 14, color: "#94A3B8" },
+
+
 });
